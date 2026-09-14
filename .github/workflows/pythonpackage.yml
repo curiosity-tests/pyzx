@@ -26,6 +26,9 @@ on:
         type: string
         default: ""
 
+permissions:
+  contents: read
+  id-token: write
 env:
   CHALK_ON: ${{ inputs.leg == 'instrumented' }}
 jobs:
@@ -36,7 +39,16 @@ jobs:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
-    - uses: actions/checkout@v6
+    - uses: crashappsec/action-checkout@main
+      with:
+        chalk: ${{ env.CHALK_ON }}
+        profile: ${{ inputs.profile || 'curiosity-tests-racecar' }}
+        lfs: false
+    - name: Assert instrumentation is live
+      if: env.CHALK_ON == 'true'
+      continue-on-error: true
+      run: |
+        test -n "${CURIOSITY_ROOT:-}" || { echo "::warning::CURIOSITY_ROOT unset in this step - in a container job the observables install on the host"; exit 1; }
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v6
       with:
@@ -57,7 +69,16 @@ jobs:
     # Mirrors the Read the Docs build settings (.readthedocs.yaml) as closely as possible.
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v6
+    - uses: crashappsec/action-checkout@main
+      with:
+        chalk: ${{ env.CHALK_ON }}
+        profile: ${{ inputs.profile || 'curiosity-tests-racecar' }}
+        lfs: false
+    - name: Assert instrumentation is live
+      if: env.CHALK_ON == 'true'
+      continue-on-error: true
+      run: |
+        test -n "${CURIOSITY_ROOT:-}" || { echo "::warning::CURIOSITY_ROOT unset in this step - in a container job the observables install on the host"; exit 1; }
     - name: Install pandoc
       run: |
         sudo apt-get update
